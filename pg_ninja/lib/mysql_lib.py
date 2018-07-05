@@ -1301,19 +1301,22 @@ class mysql_source(object):
 		self.logger.info("building obfuscation for source %s" % self.source)
 		for schema in self.obfuscate_schemas:
 			try:
-				clear_tables = [table for table in self.schema_tables[schema] if table not in self.obfuscation[schema]]
-				destination_schema = self.schema_loading[schema]["loading_obfuscated"]
-				self.logger.info("processing schema %s into %s" % (schema, destination_schema))
-				for table in self.obfuscation[schema]:
-					try:
-						table_obfuscation = self.obfuscation[schema][table]
-						self.logger.info("Creating the table %s.%s " % (destination_schema, table, ))
-						self.pg_engine.create_obfuscated_table(table,  schema)
-						self.pg_engine.copy_obfuscated_table(table,  schema, table_obfuscation)
-						self.pg_engine.create_obfuscated_indices(table,  schema)
-						self.pg_engine.store_obfuscated_table(table,  schema)
-					except:
-						self.logger.error("Could not obfuscate the table  %s.%s " % (destination_schema,  table))
+				if self.obfuscation:
+					clear_tables = [table for table in self.schema_tables[schema] if table not in self.obfuscation[schema]]
+					destination_schema = self.schema_loading[schema]["loading_obfuscated"]
+					self.logger.info("processing schema %s into %s" % (schema, destination_schema))
+					for table in self.obfuscation[schema]:
+						try:
+							table_obfuscation = self.obfuscation[schema][table]
+							self.logger.info("Creating the table %s.%s " % (destination_schema, table, ))
+							self.pg_engine.create_obfuscated_table(table,  schema)
+							self.pg_engine.copy_obfuscated_table(table,  schema, table_obfuscation)
+							self.pg_engine.create_obfuscated_indices(table,  schema)
+							self.pg_engine.store_obfuscated_table(table,  schema)
+						except:
+							self.logger.error("Could not obfuscate the table  %s.%s " % (destination_schema,  table))
+				else:
+					clear_tables = [table for table in self.schema_tables[schema]]
 			except KeyError:
 				self.logger.warning("the schema %s doesn't have obfuscation" % (schema))
 				try:
@@ -1380,8 +1383,7 @@ class mysql_source(object):
 			self.create_destination_tables()
 			self.disconnect_db_buffered()
 			self.copy_tables()
-			if self.obfuscation:
-				self.init_obfuscation()
+			self.init_obfuscation()
 			self.pg_engine.grant_select()
 			self.pg_engine.swap_schemas()
 			self.pg_engine.clean_batch_data()
