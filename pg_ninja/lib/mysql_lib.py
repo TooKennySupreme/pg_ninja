@@ -25,6 +25,7 @@ class mysql_source(object):
 		self.schema_list = []
 		self.hexify_always = ['blob', 'tinyblob', 'mediumblob','longblob','binary','varbinary','geometry']
 		self.schema_only = {}
+		self.gtid_mode = False
 		self.gtid_enable = False
 	
 	def __del__(self):
@@ -197,7 +198,11 @@ class mysql_source(object):
 					list_exclude = self.limit_tables[table_list[0]] 
 					list_exclude.append(table_list[1])
 				except KeyError:
-					list_exclude.append(table_list[1])
+					try:
+						list_exclude.append(table_list[1])
+					except IndexError:
+						pass
+				
 				self.limit_tables[table_list[0]]  = list_exclude
 		if skip_tables:
 			table_skip = [table.split('.') for table in skip_tables]		
@@ -207,7 +212,10 @@ class mysql_source(object):
 					list_exclude = self.skip_tables[table_list[0]] 
 					list_exclude.append(table_list[1])
 				except KeyError:
-					list_exclude.append(table_list[1])
+					try:
+						list_exclude.append(table_list[1])
+					except:
+						pass
 				self.skip_tables[table_list[0]]  = list_exclude
 		
 		
@@ -686,13 +694,23 @@ class mysql_source(object):
 		"""
 		self.replica_conn = {}
 		self.source_config = self.sources[self.source]
+		try:
+			exit_on_error = True if self.source_config["on_error_read"]=='exit' else False
+		except KeyError:
+			exit_on_error = True
 		self.my_server_id = self.source_config["my_server_id"]
 		self.limit_tables = self.source_config["limit_tables"]
 		self.skip_tables = self.source_config["skip_tables"]
 		self.replica_batch_size = self.source_config["replica_batch_size"]
 		self.sleep_loop = self.source_config["sleep_loop"]
 		self.hexify = [] + self.hexify_always
-		self.connect_db_buffered()
+		try:
+			self.connect_db_buffered()
+		except:
+			if exit_on_error:
+				raise
+			else: 
+				return "skip"
 		self.pg_engine.connect_db()
 		self.schema_mappings = self.pg_engine.get_schema_mappings()
 		self.schema_replica = [schema for schema in self.schema_mappings]
@@ -713,7 +731,11 @@ class mysql_source(object):
 			The method calls the common steps required to initialise the database connections and
 			class attributes within sync_tables,refresh_schema and init_replica.
 		"""
-		self.source_config = self.sources[self.source]
+		try:
+			self.source_config = self.sources[self.source]
+		except KeyError:
+			self.logger.error("The source %s doesn't exists " % (self.source))
+			sys.exit()
 		self.out_dir = self.source_config["out_dir"]
 		self.copy_mode = self.source_config["copy_mode"]
 		self.pg_engine.lock_timeout = self.source_config["lock_timeout"]
@@ -873,26 +895,7 @@ class mysql_source(object):
 			table_map = {}
 		return table_type_map
 	
-	def __build_gtid_set(self, gtid):
-		"""
-			The method builds a gtid set using the current gtid and
-		"""
-		new_set = None
-		gtid_pack = []
-		master_data= self.get_master_coordinates()
-		if "Executed_Gtid_Set" in master_data[0]:
-			gtid_set = master_data[0]["Executed_Gtid_Set"]
-			gtid_list = gtid_set.split(",\n")
-			for gtid_item in gtid_list:
-				if gtid_item.split(':')[0] in gtid:
-					gtid_old = gtid_item.split(':')
-					gtid_new = "%s:%s-%s" % (gtid_old[0],gtid_old[1].split('-')[0],gtid[gtid_old[0]])
-					gtid_pack.append(gtid_new)
-				else:
-					gtid_pack.append(gtid_item)
-			new_set = ",\n".join(gtid_pack)
-		return new_set
-
+	
 	def __store_binlog_event(self, table, schema):
 		"""
 		The private method returns whether the table event should be stored or not in the postgresql log replica.
@@ -914,6 +917,26 @@ class mysql_source(object):
 
 		return True
 	
+	def __build_gtid_set(self, gtid):
+		"""
+			The method builds a gtid set using the current gtid and
+		"""
+		new_set = None
+		gtid_pack = []
+		master_data= self.get_master_coordinates()
+		if "Executed_Gtid_Set" in master_data[0]:
+			gtid_set = master_data[0]["Executed_Gtid_Set"]
+			gtid_list = gtid_set.split(",\n")
+			for gtid_item in gtid_list:
+				if gtid_item.split(':')[0] in gtid:
+					gtid_old = gtid_item.split(':')
+					gtid_new = "%s:%s-%s" % (gtid_old[0],gtid_old[1].split('-')[0],gtid[gtid_old[0]])
+					gtid_pack.append(gtid_new)
+				else:
+					gtid_pack.append(gtid_item)
+			new_set = ",\n".join(gtid_pack)
+		return new_set
+		
 	def __read_replica_stream(self, batch_data):
 		"""
 		Stream the replica using the batch data. This method evaluates the different events streamed from MySQL 
@@ -943,6 +966,7 @@ class mysql_source(object):
 		:return: the batch's data composed by binlog name, binlog position and last event timestamp read from the mysql replica stream.
 		:rtype: dictionary
 		"""
+		size_insert=0
 		sql_tokeniser = sql_token()
 		
 		table_type_map = self.get_table_type_map()	
@@ -957,10 +981,17 @@ class mysql_source(object):
 		log_position = batch_data[0][2]
 		log_table = batch_data[0][3]
 		if self.gtid_mode:
-			gtid_set = batch_data[0][4]
+			gtid_position = batch_data[0][4]
+			gtid_pack = gtid_position.split(",\n")
+			blocking = True
+			for gtid in gtid_pack:
+				gtid  = gtid.split(':')
+				next_gtid[gtid [0]]  = gtid [1].split("-")[-1]
+				gtid_set = self.__build_gtid_set(next_gtid)
 		else:
+			blocking = False
 			gtid_set = None
-		
+		stream_connected = False
 		my_stream = BinLogStreamReader(
 			connection_settings = self.replica_conn, 
 			server_id = self.my_server_id, 
@@ -971,43 +1002,45 @@ class mysql_source(object):
 			resume_stream = True, 
 			only_schemas = self.schema_replica, 
 			slave_heartbeat = self.sleep_loop, 
+			blocking = blocking,
+			
 		)
 		
 		if gtid_set:
-			self.logger.debug("gtid: %s. id_batch: %s " % (gtid_set, id_batch))
+			self.logger.debug("GTID ENABLED - gtid: %s. id_batch: %s " % (gtid_set, id_batch))
 		else:
-			self.logger.debug("log_file %s, log_position %s. id_batch: %s " % (log_file, log_position, id_batch))
-		
+			self.logger.debug("GTID DISABLED - log_file %s, log_position %s. id_batch: %s " % (log_file, log_position, id_batch))
 		
 		for binlogevent in my_stream:
-			if isinstance(binlogevent, RotateEvent):
+			if isinstance(binlogevent, GtidEvent):
+				if close_batch:
+					break
+				gtid  = binlogevent.gtid.split(':')
+				next_gtid[gtid [0]]  = gtid [1]
+				master_data["gtid"] = next_gtid
+			
+			elif isinstance(binlogevent, RotateEvent):
 				event_time = binlogevent.timestamp
 				binlogfile = binlogevent.next_binlog
 				position = binlogevent.position
 				self.logger.debug("ROTATE EVENT - binlogfile %s, position %s. " % (binlogfile, position))
-				if log_file != binlogfile:
+				if (log_file != binlogfile and stream_connected) or len(group_insert)>0:
 					close_batch = True
+				master_data["File"]=binlogfile
+				master_data["Position"]=position
+				master_data["Time"]=event_time
+				master_data["gtid"] = next_gtid
+				stream_connected = True
 				if close_batch:
-					if log_file!=binlogfile:
-						master_data["File"]=binlogfile
-						master_data["Position"]=position
-						master_data["Time"]=event_time
-						master_data["gtid"] = next_gtid
-					if len(group_insert)>0:
-						self.pg_engine.write_batch(group_insert)
-						group_insert=[]
-					my_stream.close()
-					return [master_data, close_batch]
-			elif isinstance(binlogevent, GtidEvent):
-				gtid  = binlogevent.gtid.split(':')
-				next_gtid[gtid [0]]  = gtid [1]
+					break
+				
 			elif isinstance(binlogevent, HeartbeatLogEvent):
-				if len(group_insert)>0:
-						self.pg_engine.write_batch(group_insert)
-						group_insert=[]
-						my_stream.close()
-						master_data["File"]=binlogevent.ident
-						return [master_data, True]
+				self.logger.debug("HEARTBEAT EVENT - binlogfile %s " % (binlogevent.ident,))
+				if len(group_insert)>0 or log_file != binlogevent.ident:
+					self.logger.debug("WRITING ROWS - binlogfile %s " % (binlogevent.ident,))
+					master_data["File"] = binlogevent.ident
+					close_batch = True
+					break
 			
 			elif isinstance(binlogevent, QueryEvent):
 				event_time = binlogevent.timestamp
@@ -1015,7 +1048,7 @@ class mysql_source(object):
 					schema_query = binlogevent.schema.decode()
 				except:
 					schema_query = binlogevent.schema
-				#self.logger.info("CAPTURED QUERY EVENT - %s " % (binlogevent.query))
+				
 				if binlogevent.query.strip().upper() not in self.statement_skip and schema_query in self.schema_mappings: 
 					close_batch=True
 					destination_schema = self.schema_mappings[schema_query]["clear"]
