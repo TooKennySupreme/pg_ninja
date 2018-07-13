@@ -823,6 +823,7 @@ class mysql_source(object):
 		self.create_destination_tables()
 		self.disconnect_db_buffered()
 		self.copy_tables()
+		self.init_obfuscation()
 		self.__refresh_obfuscation()
 		self.pg_engine.obfuscation = self.obfuscation
 		try:
