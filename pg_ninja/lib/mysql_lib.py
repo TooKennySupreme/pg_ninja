@@ -770,8 +770,7 @@ class mysql_source(object):
 			
 			
 			self.copy_tables()
-			if self.obfuscation:
-				self.__refresh_obfuscation()
+			self.init_obfuscation()
 			self.pg_engine.grant_select()
 			self.pg_engine.swap_schemas()
 			self.drop_loading_schemas()
@@ -818,15 +817,14 @@ class mysql_source(object):
 		self.schema_list = [schema for schema in self.schema_mappings if schema in self.schema_only]
 		self.get_table_list()
 		self.create_destination_schemas()
-		self.pg_engine.schema_loading = self.schema_loading
-		self.pg_engine.schema_tables = self.schema_tables
-		self.create_destination_tables()
-		self.disconnect_db_buffered()
-		self.copy_tables()
-		self.init_obfuscation()
-		self.__refresh_obfuscation()
-		self.pg_engine.obfuscation = self.obfuscation
 		try:
+			self.pg_engine.schema_loading = self.schema_loading
+			self.pg_engine.schema_tables = self.schema_tables
+			self.create_destination_tables()
+			self.disconnect_db_buffered()
+			self.copy_tables()
+			self.init_obfuscation()
+			self.pg_engine.obfuscation = self.obfuscation
 			self.pg_engine.grant_select()
 			self.pg_engine.swap_tables()
 			self.drop_loading_schemas()
