@@ -823,9 +823,8 @@ class mysql_source(object):
 		self.create_destination_tables()
 		self.disconnect_db_buffered()
 		self.copy_tables()
-		if self.obfuscation:
-			self.__refresh_obfuscation()
-			self.pg_engine.obfuscation = self.obfuscation
+		self.__refresh_obfuscation()
+		self.pg_engine.obfuscation = self.obfuscation
 		try:
 			self.pg_engine.grant_select()
 			self.pg_engine.swap_tables()
