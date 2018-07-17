@@ -1330,7 +1330,7 @@ class mysql_source(object):
 			No swap is performed in this method though.
 		"""
 		self.logger.info("building obfuscation for source %s" % self.source)
-		for schema in self.obfuscate_schemas:
+		for schema in self.schema_tables:
 			try:
 				if self.obfuscation:
 					clear_tables = [table for table in self.schema_tables[schema] if table not in self.obfuscation[schema]]
@@ -1354,7 +1354,7 @@ class mysql_source(object):
 					clear_tables = [table for table in self.schema_tables[schema]]
 				except KeyError:
 					self.logger.warning("Could not process the tables in clear in schema %s" % (schema))
-				
+			
 			try:
 				
 				for table in clear_tables:
