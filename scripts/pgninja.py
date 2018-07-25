@@ -34,6 +34,7 @@ logid_help = """Specifies the log id entry for displaying the error details"""
 version_help = """Displays pg_ninja's installed  version."""
 rollbar_help = """Overrides the level for messages to be sent to rolllbar. One of: "critical", "error", "warning", "info". The Default is "info" """
 full_help = """When specified with run_maintenance the switch performs a vacuum full instead of a normal vacuum. """
+start_help = """When specified with init_replica,sync_tables,refresh_schema starts automatically the replica at the end of the data load. """
 
 parser = argparse.ArgumentParser(description='Command line for pg_ninja.',  add_help=True)
 parser.add_argument('command', type=str, help=command_help)
@@ -46,6 +47,7 @@ parser.add_argument('--debug', default=False, required=False, help=debug_help, a
 parser.add_argument('--version', action='version', help=version_help,version='pg_ninja {version}'.format(version=__version__))
 parser.add_argument('--rollbar-level', type=str, default="info", required=False, help=rollbar_help)
 parser.add_argument('--full', default=False, required=False, help=full_help, action='store_true')
+parser.add_argument('--start', default=False, required=False, help=start_help, action='store_true')
 
 args = parser.parse_args()
 
