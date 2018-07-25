@@ -391,7 +391,10 @@ class replica_engine(object):
 			self.mysql_source.init_replica()
 		elif self.args.command == 'sync_tables': 
 			self.mysql_source.sync_tables()
+		elif self.args.command == 'refresh_schema': 
+			self.mysql_source.refresh_schema()
 		if self.args.start:
+			self.logger.info("Starting the replica process for source %s" % self.args.source)
 			self.logger.info("Starting the replica process for source %s" % self.args.source)
 			subprocess.run("pgninja.py start_replica --source %s" % self.args.source , shell=True, check=True)
 			
@@ -461,9 +464,9 @@ class replica_engine(object):
 					foreground = False
 					print("Sync tables process for source %s started." % (self.args.source))
 				keep_fds = [self.logger_fds]
-				init_pid = os.path.expanduser('%s/%s.pid' % (self.config["pid_dir"],self.args.source))
+				init_pid = os.path.expanduser('%s/%s_refresh_schema.pid' % (self.config["pid_dir"],self.args.source))
 				self.logger.info("The tables %s within source %s will be synced." % (self.args.tables, self.args.source))
-				sync_daemon = Daemonize(app="sync_tables", pid=init_pid, action=self.mysql_source.refresh_schema, foreground=foreground , keep_fds=keep_fds)
+				sync_daemon = Daemonize(app="sync_tables", pid=init_pid, action=self.__run_mysql_init, foreground=foreground , keep_fds=keep_fds)
 				sync_daemon .start()
 
 				
@@ -490,7 +493,7 @@ class replica_engine(object):
 					foreground = False
 					print("Sync tables process for source %s started." % (self.args.source))
 				keep_fds = [self.logger_fds]
-				init_pid = os.path.expanduser('%s/%s.pid' % (self.config["pid_dir"],self.args.source))
+				init_pid = os.path.expanduser('%s/%s_sync_tables.pid' % (self.config["pid_dir"],self.args.source))
 				self.logger.info("The tables %s within source %s will be synced." % (self.args.tables, self.args.source))
 				sync_daemon = Daemonize(app="sync_tables", pid=init_pid, action=self.__run_mysql_init, foreground=foreground , keep_fds=keep_fds)
 				sync_daemon .start()
