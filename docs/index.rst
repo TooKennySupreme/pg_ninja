@@ -1,4 +1,4 @@
-Welcome to pg_obfuscator's documentation!
+Welcome to pg_ninja's documentation!
 =======================================================
 
 Contents:
