@@ -49,7 +49,7 @@ sources:
         out_dir: /tmp
         sleep_loop: 1
         on_error_replay: 'exit'
-        obfuscation_file: '~/.pg_ninja/obfuscation/obfuscation-example.yml'
+        obfuscation_file: '~/.pg_ninja/configuration/obfuscation-example.yml'
         auto_maintenance: "1 day"
         gtid_enable: No
         type: mysql

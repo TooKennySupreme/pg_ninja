@@ -79,6 +79,9 @@ class replica_engine(object):
 		local_conf = "%s/configuration/" % cham_dir 
 		self.global_conf_example = '%s/pg_ninja/configuration/config-example.yml' % python_lib
 		self.local_conf_example = '%s/config-example.yml' % local_conf
+		self.global_obf_example = '%s/pg_ninja/configuration/obfuscation-example.yml' % python_lib
+		self.local_obf_example = '%s/obfuscation-example.yml' % local_conf
+		
 		
 		local_logs = "%s/logs/" % cham_dir 
 		local_pid = "%s/pid/" % cham_dir 
@@ -215,6 +218,14 @@ class replica_engine(object):
 		else:
 			print ("copying configuration  example in %s" % self.local_conf_example)
 			copy(self.global_conf_example, self.local_conf_example)
+		
+		if os.path.isfile(self.local_obf_example):
+			if os.path.getctime(self.global_obf_example)>os.path.getctime(self.local_obf_example):
+				print ("updating obfuscation example with %s" % self.local_obf_example)
+				copy(self.global_obf_example, self.local_obf_example)
+		else:
+			print ("copying obfuscation example in %s" % self.local_obf_example)
+			copy(self.global_obf_example, self.local_obf_example)
 	
 	def load_config(self):
 		""" 

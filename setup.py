@@ -13,7 +13,7 @@ package_data = ('%s/pg_ninja' % python_lib, ['LICENSE'])
 
 sql_up_path = 'sql/upgrade'
 conf_dir = "/%s/pg_ninja/configuration" % python_lib
-obf_dir = "/%s/pg_ninja/obfuscation" % python_lib
+obf_dir = "/%s/pg_ninja/configuration" % python_lib
 sql_dir = "/%s/pg_ninja/sql" % python_lib
 sql_up_dir = "/%s/pg_ninja/%s" % (python_lib, sql_up_path)
 

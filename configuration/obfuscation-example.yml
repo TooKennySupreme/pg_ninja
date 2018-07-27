@@ -1,0 +1,38 @@
+---
+# In order to specify the tables to obfuscate you should set the MySQL's schema name where the table is present.
+# Under the schema key you can specify multiple tables. Each table can have different fields with different  obfuscation strategies.
+
+# this is the schema name
+my_schema:
+    # The following tables show the different obfuscation strategies.
+    # obfuscate the entire field text_full in table example_01 using SHA256 
+    example_01:
+        text_full:
+            mode: normal
+            nonhash_start: 0
+            nonhash_length: 0
+
+    # obfuscate the field text_partial in table example_02 using SHA256 preserving the first two characters        
+    example_02:
+        text_partial:
+            mode: normal
+            nonhash_start: 1
+            nonhash_length: 2
+
+            
+    # obfuscate the field date_field in table example_03 changing the date to the first of january of the given year
+    # e.g. 2015-05-20 -> 2015-01-01
+    example_03:
+        date_field:
+            mode: date
+        
+    # obfuscate the field numeric_field (integer, double etc.) in table example_04 to 0
+    example_04:
+        numeric_field:
+            mode: numeric
+
+            
+    # obfuscate the field nullable_field changing the value to NULL
+    example_05:
+        nullable_field:
+            mode: setnull
