@@ -56,7 +56,7 @@ The tool supports real time obfuscation.
 	author="Transferwise LTD",
 	author_email="info@transferwise.com",
 	url="https://www.transferwise.com/",
-	license="BSD License",
+	license="Apache 2.0 License",
 	platforms=[
 		"linux"
 	],
@@ -98,6 +98,8 @@ The tool supports real time obfuscation.
 		'rollbar'
 	],
 	data_files = data_files, 
-	include_package_data = True
+	include_package_data = True,
+	python_requires='>=3.3',
+	keywords='postgresql mysql replica migration database',
 	
 )
