@@ -39,7 +39,7 @@ data_files.append(sql_up_files)
 
 setup(
 	name="pg_ninja",
-	version="v2.0-alpha1",
+	version="v2.0.0-alpha1",
 	description="MySQL to PostgreSQL replica and migration",
 	long_description=""" pg_ninja is a tool for replicating from MySQL to PostgreSQL compatible with Python 3.3+.
 The system use the library mysql-replication to pull the row images from MySQL which are transformed into a jsonb object. 
