@@ -55,7 +55,7 @@ The tool supports real time obfuscation.
 
 	author="Transferwise LTD",
 	author_email="info@transferwise.com",
-	url="https://www.transferwise.com/",
+        url="https://github.com/transferwise/pg_ninja",
 	license="Apache 2.0 License",
 	platforms=[
 		"linux"
