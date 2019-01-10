@@ -1,5 +1,5 @@
 PyMySQL==0.7.6
-PyYAML==3.11
+PyYAML==4.2b1
 Sphinx==1.4.6
 argparse==1.2.1
 docutils==0.12
