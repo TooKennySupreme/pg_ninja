@@ -92,7 +92,7 @@ The tool supports real time obfuscation.
 		'argparse>=1.2.1', 
 		'mysql-replication>=0.11', 
 		'psycopg2-binary>=2.7.0', 
-		'PyYAML>=3.11', 
+		'PyYAML>=4.2b1',
 		'tabulate>=0.7.7', 
 		'daemonize>=2.4.7', 
 		'rollbar'
